@@ -1,0 +1,73 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write   # needed to create releases on tags
+
+jobs:
+  build:
+    name: ${{ matrix.label }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            label: linux-x86_64
+            bin: mrec
+            archive: mrec-linux-x86_64.tar.gz
+          - os: windows-latest
+            label: windows-x86_64
+            bin: mrec.exe
+            archive: mrec-windows-x86_64.zip
+          - os: macos-latest
+            label: macos-arm64
+            bin: mrec
+            archive: mrec-macos-arm64.tar.gz
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      # rdev needs X11 dev libraries on Linux; not needed on Win/macOS.
+      - name: Install Linux X11 deps
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libx11-dev libxtst-dev libxi-dev
+
+      - name: Build
+        run: cargo build --release --locked
+
+      - name: Package (unix)
+        if: runner.os != 'Windows'
+        run: |
+          tar -C target/release -czf "${{ matrix.archive }}" "${{ matrix.bin }}"
+
+      - name: Package (windows)
+        if: runner.os == 'Windows'
+        run: |
+          Compress-Archive -Path "target/release/${{ matrix.bin }}" -DestinationPath "${{ matrix.archive }}"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.label }}
+          path: ${{ matrix.archive }}
+
+      - name: Attach to release (on tag)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.archive }}
