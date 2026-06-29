@@ -30,6 +30,10 @@ jobs:
             label: macos-arm64
             bin: mrec
             archive: mrec-macos-arm64.tar.gz
+          - os: macos-13
+            label: macos-x86_64
+            bin: mrec
+            archive: mrec-macos-x86_64.tar.gz
 
     steps:
       - uses: actions/checkout@v4
