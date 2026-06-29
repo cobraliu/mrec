@@ -2,6 +2,8 @@
 name = "mrec"
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
+repository = "https://github.com/cobraliu/mrec"
 description = "Cross-platform mouse & keyboard macro recorder/replayer (rdev). Works on Windows, macOS and Linux/X11 — not Wayland."
 
 [dependencies]
